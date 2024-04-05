@@ -1,0 +1,8 @@
+[
+	{
+		"courseID": "cse120",
+		"piazzaID": "abcde123456",
+		"announcementWebhook": "https://discord.com/api/webhooks/...",
+		"feedWebhook": "https://discord.com/api/webhooks/..."
+	}
+]
