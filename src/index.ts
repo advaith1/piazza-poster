@@ -14,6 +14,7 @@ interface PiazzaFeedResponse {
 			content_snipet: string
 			folders: string[]
 			tags: string[]
+			status: string
 		}[]
 	}
 }
@@ -71,7 +72,7 @@ const checkCourse = async ({ courseID, piazzaID, announcementWebhook, feedWebhoo
 
 	const lastPostNumber = +(await env.LAST_POSTS.get(courseID) ?? 0)
 
-	const newPosts = feed.filter(post => post.nr > lastPostNumber)
+	const newPosts = feed.filter(post => post.nr > lastPostNumber && post.status !== 'private')
 	if (!newPosts.length) return new Response('')
 
 	await env.LAST_POSTS.put(courseID, Math.max(...feed.map(post => post.nr)).toString())
