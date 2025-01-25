@@ -124,7 +124,7 @@ const checkCourse = async ({ courseID, piazzaID, announcementWebhook, feedWebhoo
 		})).text()).replace(/https?:\/\/[^\s"'<>]+/g, url => url.replaceAll('\\', '')).replace(/\[(.+?)\]\(\1\)/g, '$1').replace(/!\[.*?\]\(\//g, '[[image]](https://piazza.com/')
 
 		const webhook = post.tags.includes('instructor-note') ? announcementWebhook : feedWebhook
-		await fetch(webhook, {
+		await fetch(webhook + '?with_components=true', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({

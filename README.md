@@ -23,7 +23,7 @@ Run `pnpm create-kv`, then copy the provided binding ID into wrangler.toml.
 
 In courses.json, set the `courseID` to a unique string for the course, and set `piazzaID` to the generated course ID in the Piazza URL.
 
-Use [Webhook Creator](https://webhook-creator.advaith.workers.dev) to create a webhook in the announcements channel and get the URL. (Don't create the webhook in Discord settings, use this tool instead.) Copy the URL it gives you and set it as `announcementWebhook` in courses.json.
+In Discord channel settings, go to the Integrations tab and create a webhook. Copy the new webhook's URL and set it as `announcementWebhook` in courses.json.
 
 Do the same for the feed channel, setting the second webhook's `url` as `feedWebhook`.
 
