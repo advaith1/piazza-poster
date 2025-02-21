@@ -121,7 +121,7 @@ const checkCourse = async ({ courseID, piazzaID, announcementWebhook, feedWebhoo
 		const content = (await (await fetch('https://turndown.advaith.io', {
 			method: 'POST',
 			body: postData.content
-		})).text()).replace(/https?:\/\/[^\s"'<>]+/g, url => url.replaceAll('\\', '')).replace(/\[(.+?)\]\(\1\)/g, '$1').replace(/!\[.*?\]\(\//g, '[[image]](https://piazza.com/')
+		})).text()).replace(/https?:\/\/[^\s"'<>]+/g, url => url.replaceAll('\\', '')).replace(/\[(.+?)\]\(\1\)/g, '$1').replace(/!\[.*?\]\(\//g, '[[image]](https://piazza.com/').replaceAll('](/', '](https://piazza.com/')
 
 		const webhook = post.tags.includes('instructor-note') ? announcementWebhook : feedWebhook
 		await fetch(webhook + '?with_components=true', {
