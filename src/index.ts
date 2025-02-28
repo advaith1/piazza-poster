@@ -22,6 +22,7 @@ interface PiazzaFeedResponse {
 interface PiazzaPostResponse {
 	result: {
 		history: {
+			anon?: string
 			uid?: string
 			subject: string
 			content: string
@@ -97,7 +98,7 @@ const checkCourse = async ({ courseID, piazzaID, announcementWebhook, feedWebhoo
 		})).json() as PiazzaPostResponse
 
 		let user: User | undefined
-		if (postData.uid) {
+		if (postData.uid && postData.anon === 'no') {
 			const { result: [userData] } = await (await fetch('https://piazza.com/logic/api?method=network.get_users', {
 				method: 'POST',
 				headers: {
