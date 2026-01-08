@@ -1,87 +1,72 @@
 export interface Env {
-	PIAZZA_EMAIL: string
-	PIAZZA_PASSWORD: string
+	PIAZZA_EMAIL: string;
+	PIAZZA_PASSWORD: string;
 
-	LAST_POSTS: KVNamespace
+	LAST_POSTS: KVNamespace;
 }
 
 interface PiazzaFeedResponse {
 	result: {
 		feed: {
-			nr: number
-			type: 'note' | 'question'
-			subject: string
-			content_snipet: string
-			folders: string[]
-			tags: string[]
-			status: string
-		}[]
-	}
+			nr: number;
+			type: 'note' | 'question';
+			subject: string;
+			content_snipet: string;
+			folders: string[];
+			tags: string[];
+			status: string;
+		}[];
+	};
 }
 
 interface PiazzaPostResponse {
 	result: {
 		history: {
-			anon?: string
-			uid?: string
-			subject: string
-			content: string
-		}[]
-	}
+			anon?: string;
+			uid?: string;
+			subject: string;
+			content: string;
+		}[];
+	};
 }
 
 interface User {
-	name: string
+	name: string;
 }
 
 interface PiazzaUserResponse {
-	result: User[]
+	result: User[];
 }
 
 interface Course {
-	courseID: string
-	piazzaID: string
-	announcementWebhook: string
-	feedWebhook: string
+	courseID: string;
+	piazzaID: string;
+	announcementWebhook: string;
+	feedWebhook: string;
 }
 
-import he from 'he'
+import TurndownService from 'turndown';
+import he from 'he';
 
-import courses from '../courses.json'
+import courses from '../courses.json';
+import { createDocument } from '@mixmark-io/domino';
 
-const capitalize = (str: string) => str[0].toUpperCase() + str.slice(1)
+const td = new TurndownService();
 
-const trim = (text: string, max: number) => text.length > max ? text.substring(0, max - 1)+'…' : text
+const capitalize = (str: string) => str[0].toUpperCase() + str.slice(1);
 
-const checkCourse = async ({ courseID, piazzaID, announcementWebhook, feedWebhook }: Course, cookie: string, csrfToken: string, env: Env) => {
-	const { result: { feed } } = await (await fetch('https://piazza.com/logic/api?method=network.get_my_feed', {
-		method: 'POST',
-		headers: {
-			cookie,
-			'csrf-token': csrfToken,
-			'content-type': 'application/json',
-		},
-		body: JSON.stringify({
-			method: 'network.get_my_feed',
-			params: {
-				nid: piazzaID,
-				offset: 0,
-				limit: 200
-			}
-		})
-	})).json() as PiazzaFeedResponse
+const trim = (text: string, max: number) => (text.length > max ? text.substring(0, max - 1) + '…' : text);
 
-	const lastPostNumber = +(await env.LAST_POSTS.get(courseID) ?? 0)
-
-	const newPosts = feed.filter(post => post.nr > lastPostNumber && post.status !== 'private')
-	if (!newPosts.length) return new Response('')
-
-	await env.LAST_POSTS.put(courseID, Math.max(...feed.map(post => post.nr)).toString())
-
-	newPosts.sort((a, b) => a.nr - b.nr)
-
-	for (const post of newPosts) {
-		const { result: { history: [postData] } } = await (await fetch('https://piazza.com/logic/api?method=content.get', {
+const checkCourse = async (
+	{ courseID, piazzaID, announcementWebhook, feedWebhook }: Course,
+	cookie: string,
+	csrfToken: string,
+	env: Env
+) => {
+	const {
+		result: { feed },
+	} = (await (
+		await fetch('https://piazza.com/logic/api?method=network.get_my_feed', {
 			method: 'POST',
 			headers: {
 				cookie,
@@ -89,17 +74,32 @@ const checkCourse = async ({ courseID, piazzaID, announcementWebhook, feedWebhoo
 				'content-type': 'application/json',
 			},
 			body: JSON.stringify({
-				method: 'content.get',
+				method: 'network.get_my_feed',
 				params: {
-					cid: post.nr,
-					nid: piazzaID
-				}
-			})
-		})).json() as PiazzaPostResponse
+					nid: piazzaID,
+					offset: 0,
+					limit: 200,
+				},
+			}),
+		})
+	).json()) as PiazzaFeedResponse;
 
-		let user: User | undefined
-		if (postData.uid && postData.anon === 'no') {
-			const { result: [userData] } = await (await fetch('https://piazza.com/logic/api?method=network.get_users', {
+	const lastPostNumber = +((await env.LAST_POSTS.get(courseID)) ?? 0);
+
+	const newPosts = feed.filter((post) => post.nr > lastPostNumber && post.status !== 'private');
+	if (!newPosts.length) return new Response('');
+
+	await env.LAST_POSTS.put(courseID, Math.max(...feed.map((post) => post.nr)).toString());
+
+	newPosts.sort((a, b) => a.nr - b.nr);
+
+	for (const post of newPosts) {
+		const {
+			result: {
+				history: [postData],
+			},
+		} = (await (
+			await fetch('https://piazza.com/logic/api?method=content.get', {
 				method: 'POST',
 				headers: {
 					cookie,
@@ -107,30 +107,58 @@ const checkCourse = async ({ courseID, piazzaID, announcementWebhook, feedWebhoo
 					'content-type': 'application/json',
 				},
 				body: JSON.stringify({
-					method: 'network.get_users',
+					method: 'content.get',
 					params: {
-						ids: [postData.uid],
-						nid: piazzaID
-					}
+						cid: post.nr,
+						nid: piazzaID,
+					},
+				}),
+			})
+		).json()) as PiazzaPostResponse;
+
+		let user: User | undefined;
+		if (postData.uid && postData.anon === 'no') {
+			const {
+				result: [userData],
+			} = (await (
+				await fetch('https://piazza.com/logic/api?method=network.get_users', {
+					method: 'POST',
+					headers: {
+						cookie,
+						'csrf-token': csrfToken,
+						'content-type': 'application/json',
+					},
+					body: JSON.stringify({
+						method: 'network.get_users',
+						params: {
+							ids: [postData.uid],
+							nid: piazzaID,
+						},
+					}),
 				})
-			})).json() as PiazzaUserResponse
-			user = userData
+			).json()) as PiazzaUserResponse;
+			user = userData;
 		}
 
-		const title = he.decode(postData.subject)
+		const title = he.decode(postData.subject);
 
-		const content = (await (await fetch('https://turndown.advaith.io', {
-			method: 'POST',
-			body: postData.content
-		})).text()).replace(/https?:\/\/[^\s"'<>]+/g, url => url.replaceAll('\\', '')).replace(/\[(.+?)\]\(\1\)/g, '$1').replace(/!\[.*?\]\(\//g, '[[image]](https://piazza.com/').replaceAll('](/', '](https://piazza.com/')
+		const content = td
+			.turndown(createDocument(he.decode(postData.content)))
+			.replace(/https?:\/\/[^\s"'<>]+/g, (url) => url.replaceAll('\\', ''))
+			.replace(/\[(.+?)\]\(\1\)/g, '$1')
+			.replace(/!\[.*?\]\(\//g, '[[image]](https://piazza.com/')
+			.replaceAll('](/', '](https://piazza.com/');
 
-		const webhook = post.tags.includes('instructor-note') ? announcementWebhook : feedWebhook
+		const webhook = post.tags.includes('instructor-note') ? announcementWebhook : feedWebhook;
 		await fetch(webhook + '?with_components=true', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
 				username: `${user?.name ?? 'Anonymous'} on Piazza`,
-				content: trim(`## ${title}\n${capitalize(post.type)} ${post.folders.length ? `in ${post.folders.join(', ')}` : ''}\n\n${content}`, 2000),
+				content: trim(
+					`## ${title}\n${capitalize(post.type)} ${post.folders.length ? `in ${post.folders.join(', ')}` : ''}\n\n${content}`,
+					2000
+				),
 				components: [
 					{
 						type: 1,
@@ -139,46 +167,50 @@ const checkCourse = async ({ courseID, piazzaID, announcementWebhook, feedWebhoo
 								type: 2,
 								label: 'View on Piazza',
 								style: 5,
-								url: `https://piazza.com/class/${piazzaID}/post/${post.nr}`
-							}
-						]
-					}
+								url: `https://piazza.com/class/${piazzaID}/post/${post.nr}`,
+							},
+						],
+					},
 				],
 				allowed_mentions: {
-					parse: []
-				}
-			})
-		})
+					parse: [],
+				},
+			}),
+		});
 	}
-}
+};
 
-const getCookies = (res: Response) => res.headers.getSetCookie().map(cookie => cookie.split(';')[0]).join('; ')
+const getCookies = (res: Response) =>
+	res.headers
+		.getSetCookie()
+		.map((cookie) => cookie.split(';')[0])
+		.join('; ');
 
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-		return new Response('ok')
+		return new Response('ok');
 	},
 	async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
-		const csrfRes = await fetch('https://piazza.com/main/csrf_token')
-		const csrfToken = (await csrfRes.text()).split('"')[1]
+		const csrfRes = await fetch('https://piazza.com/main/csrf_token');
+		const csrfToken = (await csrfRes.text()).split('"')[1];
 
-		const loginBody = new FormData()
-		loginBody.append('from', '/signup')
-		loginBody.append('email', env.PIAZZA_EMAIL)
-		loginBody.append('password', env.PIAZZA_PASSWORD)
-		loginBody.append('remember', 'on')
-		loginBody.append('csrf_token', csrfToken)
+		const loginBody = new FormData();
+		loginBody.append('from', '/signup');
+		loginBody.append('email', env.PIAZZA_EMAIL);
+		loginBody.append('password', env.PIAZZA_PASSWORD);
+		loginBody.append('remember', 'on');
+		loginBody.append('csrf_token', csrfToken);
 		const loginRes = await fetch('https://piazza.com/class', {
 			method: 'POST',
 			headers: {
-				cookie: getCookies(csrfRes)
+				cookie: getCookies(csrfRes),
 			},
-			body: loginBody
-		})
-		const cookie = getCookies(loginRes)
+			body: loginBody,
+		});
+		const cookie = getCookies(loginRes);
 
 		for (const course of courses) {
-			await checkCourse(course, cookie, csrfToken, env)
+			await checkCourse(course, cookie, csrfToken, env);
 		}
-	}
-}
+	},
+};
