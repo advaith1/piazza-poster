@@ -6,16 +6,20 @@
 		"deploy": "wrangler deploy",
 		"set-email": "wrangler secret put PIAZZA_EMAIL",
 		"set-password": "wrangler secret put PIAZZA_PASSWORD",
-		"create-kv": "wrangler kv:namespace create LAST_POSTS",
+		"create-kv": "wrangler kv namespace create LAST_POSTS",
 		"start": "wrangler dev"
 	},
 	"devDependencies": {
-		"@cloudflare/workers-types": "^4.20231218.0",
+		"@cloudflare/workers-types": "^4.20260109.0",
 		"@types/he": "^1.2.3",
-		"typescript": "^5.3.3",
-		"wrangler": "^3.22.4"
+		"@types/turndown": "^5.0.6",
+		"typescript": "^5.9.3",
+		"wrangler": "^4.58.0"
 	},
 	"dependencies": {
-		"he": "^1.2.0"
-	}
+		"@mixmark-io/domino": "^2.2.0",
+		"he": "^1.2.0",
+		"turndown": "^7.2.2"
+	},
+	"packageManager": "pnpm@9.15.2+sha512.93e57b0126f0df74ce6bff29680394c0ba54ec47246b9cf321f0121d8d9bb03f750a705f24edc3c1180853afd7c2c3b94196d0a3d53d3e069d9e2793ef11f321"
 }

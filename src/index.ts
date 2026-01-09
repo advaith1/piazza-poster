@@ -1,53 +1,10 @@
-export interface Env {
-	PIAZZA_EMAIL: string
-	PIAZZA_PASSWORD: string
-
-	LAST_POSTS: KVNamespace
-}
-
-interface PiazzaFeedResponse {
-	result: {
-		feed: {
-			nr: number
-			type: 'note' | 'question'
-			subject: string
-			content_snipet: string
-			folders: string[]
-			tags: string[]
-			status: string
-		}[]
-	}
-}
-
-interface PiazzaPostResponse {
-	result: {
-		history: {
-			anon?: string
-			uid?: string
-			subject: string
-			content: string
-		}[]
-	}
-}
-
-interface User {
-	name: string
-}
-
-interface PiazzaUserResponse {
-	result: User[]
-}
-
-interface Course {
-	courseID: string
-	piazzaID: string
-	announcementWebhook: string
-	feedWebhook: string
-}
-
 import he from 'he'
+import TurndownService from 'turndown'
+import { createDocument } from '@mixmark-io/domino'
 
 import courses from '../courses.json'
+
+const turndownService = new TurndownService()
 
 const capitalize = (str: string) => str[0].toUpperCase() + str.slice(1)
 
@@ -119,10 +76,11 @@ const checkCourse = async ({ courseID, piazzaID, announcementWebhook, feedWebhoo
 
 		const title = he.decode(postData.subject)
 
-		const content = (await (await fetch('https://turndown.advaith.io', {
-			method: 'POST',
-			body: postData.content
-		})).text()).replace(/https?:\/\/[^\s"'<>]+/g, url => url.replaceAll('\\', '')).replace(/\[(.+?)\]\(\1\)/g, '$1').replace(/!\[.*?\]\(\//g, '[[image]](https://piazza.com/').replaceAll('](/', '](https://piazza.com/')
+		const content = turndownService.turndown(createDocument(postData.content))
+			.replace(/https?:\/\/[^\s"'<>]+/g, url => url.replaceAll('\\', ''))
+			.replace(/\[(.+?)\]\(\1\)/g, '$1')
+			.replace(/!\[.*?\]\(\//g, '[[image]](https://piazza.com/')
+			.replaceAll('](/', '](https://piazza.com/')
 
 		const webhook = post.tags.includes('instructor-note') ? announcementWebhook : feedWebhook
 		await fetch(webhook + '?with_components=true', {
