@@ -4,7 +4,13 @@ import { createDocument } from '@mixmark-io/domino'
 
 import courses from '../courses.json'
 
-const turndownService = new TurndownService()
+const turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' })
+
+// Piazza uses <pre> instead of <pre><code> for code blocks
+turndownService.addRule('codeblock', {
+  filter: 'pre',
+  replacement: content => '```\n' + content + '\n```'
+})
 
 const capitalize = (str: string) => str[0].toUpperCase() + str.slice(1)
 
