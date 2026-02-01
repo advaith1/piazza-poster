@@ -82,16 +82,15 @@ const checkCourse = async ({ courseID, piazzaID, announcementWebhook, feedWebhoo
 
 		const title = he.decode(postData.subject)
 
-		let content: string
-		if (postData.content.startsWith('<md>') && postData.content.endsWith('</md>')) {
-			content = postData.content.slice(4, -5)
-		} else {
-			content = turndownService.turndown(createDocument(postData.content))
-				.replace(/https?:\/\/[^\s"'<>]+/g, url => url.replaceAll('\\', ''))
-				.replace(/\[(.+?)\]\(\1\)/g, '$1')
-				.replace(/!\[.*?\]\(\//g, '[[image]](https://piazza.com/')
-				.replaceAll('](/', '](https://piazza.com/')
-		}
+		const content = (
+			postData.content.startsWith('<md>') && postData.content.endsWith('</md>')
+				? postData.content.slice(4, -5)
+				: turndownService.turndown(createDocument(postData.content))
+		)
+			.replace(/https?:\/\/[^\s"'<>]+/g, url => url.replaceAll('\\', ''))
+			.replace(/\[(.+?)\]\(\1\)/g, '$1')
+			.replace(/!\[.*?\]\(\//g, '[[image]](https://piazza.com/')
+			.replaceAll('](/', '](https://piazza.com/')
 
 		const webhook = post.tags.includes('instructor-note') ? announcementWebhook : feedWebhook
 		await fetch(webhook + '?with_components=true', {
