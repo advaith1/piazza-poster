@@ -91,7 +91,7 @@ const checkCourse = async ({ courseID, piazzaID, announcementWebhook, feedWebhoo
 		)
 			.replace(/https?:\/\/[^\s"'<>]+/g, url => url.replaceAll('\\', ''))
 			.replace(/\[(.+)\]\(\1\)/g, '$1')
-			.replace(/!\[.+\]\(\/(.+)\)/g, '<__block_boundary>__image:https://piazza.com/$1<__block_boundary>')
+			.replace(/!\[.*\]\(\/(.+)\)/g, '<__block_boundary>__image:https://piazza.com/$1<__block_boundary>')
 			.replaceAll('](/', '](https://piazza.com/')
 
 		// if the post contains images, send a components v2 message with media gallery components
